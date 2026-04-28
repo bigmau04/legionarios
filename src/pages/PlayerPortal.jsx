@@ -1,16 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   CalendarCheck, CurrencyDollar, UserCircle,
-  CheckCircle, Clock, XCircle, ArrowRight, SignOut,
+  CheckCircle, Clock, XCircle, ArrowRight, SignOut, UploadSimple, Barbell
 } from '@phosphor-icons/react';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useClub } from '../context/ClubContext';
 
 const PlayerPortal = () => {
   const { profile, signOut } = useAuth();
   const { events, attendanceRequests, payments, requestAttendance } = useClub();
+
+  const [gymHours, setGymHours] = useState(1);
+  const [gymFile, setGymFile] = useState(null);
+  const [isUploadingGym, setIsUploadingGym] = useState(false);
+  const [gymError, setGymError] = useState('');
+  const [gymSuccess, setGymSuccess] = useState('');
 
   const player        = profile?.players;
   const today         = new Date().toISOString().split('T')[0];
@@ -25,13 +32,62 @@ const PlayerPortal = () => {
 
   const handleRequest = async (event) => {
     if (!player) return;
+    const now = new Date();
+    const arrivalTime = now.toTimeString().split(' ')[0]; // "HH:MM:SS"
+
     await requestAttendance({
       playerId:   player.id,
       playerName: player.name,
       eventId:    event.id,
       eventTitle: event.title,
       date:       event.date,
+      type:       'cancha',
+      arrivalTime,
+      hoursEarned: 0
     });
+  };
+
+  const handleGymSubmit = async (e) => {
+    e.preventDefault();
+    if (!player || !gymFile) return;
+    setIsUploadingGym(true);
+    setGymError('');
+    setGymSuccess('');
+
+    try {
+      const fileExt = gymFile.name.split('.').pop();
+      const fileName = `${player.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('gym_evidence')
+        .upload(fileName, gymFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('gym_evidence')
+        .getPublicUrl(fileName);
+
+      await requestAttendance({
+        playerId: player.id,
+        playerName: player.name,
+        eventId: null,
+        eventTitle: 'Entrenamiento Externo (Gym)',
+        date: today,
+        type: 'gym',
+        arrivalTime: null,
+        hoursEarned: gymHours,
+        evidenceUrl: publicUrl
+      });
+      
+      setGymSuccess('¡Entrenamiento registrado con éxito!');
+      setGymFile(null);
+      setGymHours(1);
+    } catch (err) {
+      console.error(err);
+      setGymError('Error al subir evidencia. Asegúrate de tener permisos o conexión.');
+    } finally {
+      setIsUploadingGym(false);
+    }
   };
 
   const STATUS_COLORS = {
@@ -174,6 +230,45 @@ const PlayerPortal = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Registro de Gym */}
+        {player && (
+          <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.15 }}
+            className="bento-card space-y-4">
+            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+              <Barbell size={20} className="text-gold-500" />
+              <h3 className="font-bold text-lg">Entrenamiento Extra (Gym)</h3>
+            </div>
+            
+            <form onSubmit={handleGymSubmit} className="space-y-4 bg-white/5 p-4 rounded-2xl">
+              {gymError && <p className="text-red-400 text-xs font-bold">{gymError}</p>}
+              {gymSuccess && <p className="text-green-400 text-xs font-bold">{gymSuccess}</p>}
+              
+              <div className="flex items-center gap-4">
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Horas Entrenadas</label>
+                  <input type="number" min="0.5" max="4" step="0.5" required
+                    value={gymHours} onChange={e => setGymHours(parseFloat(e.target.value))}
+                    className="input-base !py-2 !px-3 text-sm" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Foto Evidencia</label>
+                  <label className="input-base !py-2 !px-3 text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors">
+                    <UploadSimple size={16} className="shrink-0" />
+                    <span className="truncate text-xs">{gymFile ? gymFile.name : 'Subir foto'}</span>
+                    <input type="file" accept="image/*" className="hidden" required
+                      onChange={e => setGymFile(e.target.files[0])} />
+                  </label>
+                </div>
+              </div>
+              
+              <button type="submit" disabled={!gymFile || isUploadingGym}
+                className="w-full bg-gold-500 text-navy-900 py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 transition-transform hover:scale-[0.98]">
+                {isUploadingGym ? 'Subiendo...' : 'Registrar Horas Gym'}
+              </button>
+            </form>
+          </motion.div>
+        )}
 
         {/* Mis pagos */}
         <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}

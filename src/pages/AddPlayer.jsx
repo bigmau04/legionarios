@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Phone, Trophy, IdentificationCard, CheckCircle } from '@phosphor-icons/react';
+import { ArrowLeft, User, Phone, Trophy, IdentificationCard, CheckCircle, Warning } from '@phosphor-icons/react';
 import { useClub } from '../context/ClubContext';
 
 const AddPlayer = () => {
@@ -11,6 +11,8 @@ const AddPlayer = () => {
   const defaultFees = config?.defaultFees ?? {};
 
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name:       '',
     category:   categories[0] ?? 'M18',
@@ -27,11 +29,20 @@ const AddPlayer = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    addPlayer(formData);
-    setIsSuccess(true);
-    setTimeout(() => navigate('/players'), 2000);
+    setError('');
+    setIsSubmitting(true);
+    try {
+      await addPlayer(formData);
+      setIsSuccess(true);
+      setTimeout(() => navigate('/players'), 2000);
+    } catch (err) {
+      console.error(err);
+      setError('Error al inscribir: No tienes permisos de Administrador o hubo un problema de conexión.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSuccess) {
@@ -60,6 +71,12 @@ const AddPlayer = () => {
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 overflow-hidden mb-6">
+            <Warning size={20} className="text-red-400 shrink-0" />
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
         <div className="bento-card space-y-6">
 
           <div className="space-y-2">
@@ -107,8 +124,8 @@ const AddPlayer = () => {
           </div>
         </div>
 
-        <button type="submit" className="btn-primary w-full justify-center py-5 text-lg shadow-xl shadow-gold-500/20">
-          Confirmar Inscripción
+        <button type="submit" disabled={isSubmitting} className="btn-primary w-full justify-center py-5 text-lg shadow-xl shadow-gold-500/20 disabled:opacity-50">
+          {isSubmitting ? 'Inscribiendo...' : 'Confirmar Inscripción'}
         </button>
       </form>
     </div>

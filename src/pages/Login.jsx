@@ -25,15 +25,21 @@ const Login = () => {
 
     if (isLogin) {
       const err = await signIn(email, password);
-      if (err) setError('Correo o contraseña incorrectos. Verifica tus credenciales.');
+      if (err) {
+        if (err.message === 'Email not confirmed') {
+          setError('Debes confirmar tu correo electrónico. Revisa tu bandeja de entrada (y spam).');
+        } else {
+          setError('Correo o contraseña incorrectos. Verifica tus credenciales.');
+        }
+      }
     } else {
       const err = await signUp(email, password, fullName);
       if (err) {
         console.error("SignUp Error:", err);
         setError(err.message || 'Hubo un error al registrarse.');
       } else {
-        setSuccess('¡Registro exitoso! Iniciando sesión...');
-        setTimeout(() => signIn(email, password), 1500);
+        setSuccess('¡Registro exitoso! Por favor, revisa tu correo electrónico para confirmar tu cuenta antes de entrar.');
+        // Removemos el setTimeout que intentaba hacer login porque si Supabase requiere confirmación fallará
       }
     }
     setLoading(false);

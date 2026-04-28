@@ -7,7 +7,12 @@ const ClubContext = createContext();
 const mapPlayer     = p => p ? ({ id: p.id, name: p.name, category: p.category, status: p.status, phone: p.phone, monthlyFee: p.monthly_fee, lastPayment: p.last_payment }) : null;
 const mapPayment    = p => p ? ({ id: p.id, playerId: p.player_id, name: p.name, amount: p.amount, date: p.date, method: p.method, status: p.status }) : null;
 const mapEvent      = e => e ? ({ id: e.id, title: e.title, type: e.type, date: e.date, time: e.time, location: e.location, description: e.description }) : null;
-const mapAttendance = a => a ? ({ id: a.id, playerId: a.player_id, playerName: a.player_name, eventId: a.event_id, eventTitle: a.event_title, date: a.date, status: a.status }) : null;
+const mapAttendance = a => a ? ({ 
+  id: a.id, playerId: a.player_id, playerName: a.player_name, eventId: a.event_id, 
+  eventTitle: a.event_title, date: a.date, status: a.status,
+  arrivalTime: a.arrival_time, hoursEarned: a.hours_earned,
+  evidenceUrl: a.evidence_url, type: a.type
+}) : null;
 const mapConfig     = c => c ? ({ clubName: c.club_name, tagline: c.tagline, primaryColor: c.primary_color, defaultFees: c.default_fees, categories: c.categories }) : null;
 
 const DEFAULT_CONFIG = {
@@ -64,7 +69,8 @@ export const ClubProvider = ({ children }) => {
       name: player.name, category: player.category, status: player.status,
       phone: player.phone, monthly_fee: player.monthlyFee, last_payment: null,
     }).select().single();
-    if (!error && data) setPlayers(prev => [...prev, mapPlayer(data)]);
+    if (error) throw error;
+    if (data) setPlayers(prev => [...prev, mapPlayer(data)]);
   };
 
   const updatePlayer = async (updated) => {
@@ -118,21 +124,24 @@ export const ClubProvider = ({ children }) => {
   };
 
   // ── Asistencia ──
-  const approveAttendance = async (id) => {
-    setAttendanceRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'Aprobado' } : r));
-    await supabase.from('attendance_requests').update({ status: 'Aprobado' }).eq('id', id);
+  const approveAttendance = async (id, hoursEarned = 2) => {
+    setAttendanceRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'Aprobado', hoursEarned } : r));
+    await supabase.from('attendance_requests').update({ status: 'Aprobado', hours_earned: hoursEarned }).eq('id', id);
   };
 
   const rejectAttendance = async (id) => {
-    setAttendanceRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'Rechazado' } : r));
-    await supabase.from('attendance_requests').update({ status: 'Rechazado' }).eq('id', id);
+    setAttendanceRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'Rechazado', hoursEarned: 0 } : r));
+    await supabase.from('attendance_requests').update({ status: 'Rechazado', hours_earned: 0 }).eq('id', id);
   };
 
-  const requestAttendance = async ({ playerId, playerName, eventId, eventTitle, date }) => {
-    if (attendanceRequests.some(r => r.playerId === playerId && r.eventId === eventId)) return false;
+  const requestAttendance = async ({ playerId, playerName, eventId, eventTitle, date, type = 'cancha', arrivalTime = null, hoursEarned = 0, evidenceUrl = null }) => {
+    // Evitar duplicados de cancha para el mismo evento
+    if (type === 'cancha' && attendanceRequests.some(r => r.playerId === playerId && r.eventId === eventId)) return false;
+    
     const { data, error } = await supabase.from('attendance_requests').insert({
       player_id: playerId, player_name: playerName, event_id: eventId,
       event_title: eventTitle, date, status: 'Pendiente',
+      type, arrival_time: arrivalTime, hours_earned: hoursEarned, evidence_url: evidenceUrl
     }).select().single();
     if (!error && data) setAttendanceRequests(prev => [...prev, mapAttendance(data)]);
     return !error;
