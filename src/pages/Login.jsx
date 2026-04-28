@@ -29,7 +29,8 @@ const Login = () => {
     } else {
       const err = await signUp(email, password, fullName);
       if (err) {
-        setError(err.message === 'User already registered' ? 'El correo ya está registrado.' : 'Hubo un error al registrarse. La contraseña debe tener mínimo 6 caracteres.');
+        console.error("SignUp Error:", err);
+        setError(err.message || 'Hubo un error al registrarse.');
       } else {
         setSuccess('¡Registro exitoso! Iniciando sesión...');
         setTimeout(() => signIn(email, password), 1500);
