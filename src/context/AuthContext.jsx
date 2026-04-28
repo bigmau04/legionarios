@@ -9,12 +9,13 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*, players(*)')
       .eq('id', userId)
       .single();
-    setProfile(data ?? {});
+    if (error) console.warn('Profile fetch:', error.message);
+    setProfile(data ?? null);
   };
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin  = profile?.role === 'admin';
-  const isPlayer = profile?.role === 'player' || (profile != null && !isAdmin);
+  const isPlayer = profile?.role === 'player';
 
   return (
     <AuthContext.Provider value={{

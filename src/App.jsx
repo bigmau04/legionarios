@@ -17,11 +17,32 @@ import { useAuth } from './context/AuthContext';
 
 function AppInner() {
   const { loading: clubLoading } = useClub();
-  const { user, isPlayer, loading: authLoading } = useAuth();
+  const { user, profile, isAdmin, isPlayer, loading: authLoading } = useAuth();
 
   const loading = clubLoading || authLoading;
 
   if (!loading && !user) return <Login />;
+
+  // Usuario logueado pero sin rol definido aún
+  if (!loading && user && profile !== null && !isAdmin && !isPlayer) {
+    return (
+      <div className="min-h-screen bg-navy-900 flex flex-col items-center justify-center gap-6 p-8">
+        <img src="/logo.png" alt="Logo" className="w-20 h-20 object-contain" />
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-black text-gold-500">Cuenta Pendiente de Activación</h2>
+          <p className="text-gray-400 max-w-sm">
+            Tu cuenta fue creada correctamente. Contacta al entrenador para que active tu perfil de jugador.
+          </p>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-red-400 hover:text-red-300 text-sm font-bold underline"
+        >
+          Recargar página
+        </button>
+      </div>
+    );
+  }
 
   if (!loading && isPlayer) return <PlayerPortal />;
 
