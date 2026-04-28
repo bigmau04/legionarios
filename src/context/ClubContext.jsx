@@ -21,6 +21,8 @@ const DEFAULT_CONFIG = {
   categories: ['M16', 'M18', 'Primera', 'Veteranos'],
 };
 
+const pad = n => String(n).padStart(2, '0');
+
 const generateFixedTrainings = () => {
   const fixed = [];
   const start = new Date();
@@ -30,7 +32,7 @@ const generateFixedTrainings = () => {
     d.setDate(start.getDate() + i);
     const day = d.getDay();
     if (day === 1 || day === 3 || day === 5) { // 1=Lunes, 3=Miércoles, 5=Viernes
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       fixed.push({
         id: `fixed-${dateStr}`, // ID artificial para React
         title: 'Entrenamiento Oficial',
@@ -68,16 +70,16 @@ export const ClubProvider = ({ children }) => {
       ]);
       if (pd) setPlayers(pd.map(mapPlayer));
       if (py) setPayments(py.map(mapPayment));
-      if (ev) {
-        const dbEvents = ev.map(mapEvent);
-        const fixedEvents = generateFixedTrainings();
-        const finalEvents = [...dbEvents];
-        // Solo agregar los fijos si no hay uno manual en esa fecha
-        fixedEvents.forEach(fe => {
-          if (!finalEvents.some(e => e.date === fe.date)) finalEvents.push(fe);
-        });
-        setEvents(finalEvents.sort((a, b) => a.date.localeCompare(b.date)));
-      }
+      
+      const dbEvents = ev ? ev.map(mapEvent) : [];
+      const fixedEvents = generateFixedTrainings();
+      const finalEvents = [...dbEvents];
+      // Solo agregar los fijos si no hay uno manual en esa fecha
+      fixedEvents.forEach(fe => {
+        if (!finalEvents.some(e => e.date === fe.date)) finalEvents.push(fe);
+      });
+      setEvents(finalEvents.sort((a, b) => a.date.localeCompare(b.date)));
+      
       if (ar) setAttendanceRequests(ar.map(mapAttendance));
       if (cf) setConfig(mapConfig(cf));
       setLoading(false);
