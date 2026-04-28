@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
       .eq('id', userId)
       .single();
     if (error) console.warn('Profile fetch:', error.message);
+    if (data) console.log('🛡️ Rol detectado:', data.role, 'para el usuario:', userId);
     setProfile(data ?? null);
   };
 
