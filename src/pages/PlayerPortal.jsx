@@ -99,7 +99,7 @@ const PlayerPortal = () => {
     }
   };
 
-  const initials = playerName.split(' ').map(n => n[0]).toUpperCase().join('').slice(0, 2);
+  const initials = playerName.split(' ').map(n => (n[0] ?? '').toUpperCase()).join('').slice(0, 2);
 
   return (
     <div className="min-h-screen bg-navy-900">
