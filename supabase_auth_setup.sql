@@ -104,12 +104,24 @@ CREATE POLICY "admin_config" ON club_config
 -- ── Función automática: crear perfil al registrar usuario ──
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  new_player_id BIGINT;
+  new_name TEXT;
 BEGIN
-  INSERT INTO public.profiles (id, full_name, role)
+  new_name := COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email);
+  
+  -- Insertar en players y obtener el ID
+  INSERT INTO public.players (name, category, status)
+  VALUES (new_name, 'Primera', 'Activo')
+  RETURNING id INTO new_player_id;
+
+  -- Insertar en profiles
+  INSERT INTO public.profiles (id, full_name, role, player_id)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'player')
+    new_name,
+    COALESCE(NEW.raw_user_meta_data->>'role', 'player'),
+    new_player_id
   );
   RETURN NEW;
 END;
@@ -121,4 +133,4 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ── Crear el primer admin (ejecutar DESPUÉS de crear el usuario en Supabase Auth) ──
--- UPDATE profiles SET role = 'admin' WHERE id = 'UUID-DEL-ADMIN-AQUI';
+-- UPDATE profiles SET role = 'admin' WHERE id = (SELECT id FROM auth.users WHERE email = 'TU_CORREO_AQUI');

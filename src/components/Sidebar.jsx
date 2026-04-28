@@ -1,8 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { SquaresFour, Users, CreditCard, UserCheck, Calendar, GearSix } from '@phosphor-icons/react';
+import { SquaresFour, Users, CreditCard, UserCheck, Calendar, GearSix, SignOut } from '@phosphor-icons/react';
 import { cn } from '../lib/utils';
 import { useClub } from '../context/ClubContext';
+import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
   { to: '/',           icon: <SquaresFour size={24} />, label: 'Dashboard'  },
@@ -14,17 +15,18 @@ const NAV_ITEMS = [
 
 const Sidebar = () => {
   const { config } = useClub();
+  const { signOut } = useAuth();
   const color = config?.primaryColor ?? '#FDC010';
 
   return (
     <aside className="hidden md:flex w-64 bg-navy-800 border-r border-white/5 flex-col h-screen sticky top-0">
       {/* Logo del club */}
       <div className="p-6 flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-navy-900/60 shrink-0">
+        <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-white shrink-0 relative p-1 shadow-lg shadow-white/10">
           <img
             src="/logo.png"
             alt="Legionarios RC Logo"
-            className="w-full h-full object-contain drop-shadow-lg"
+            className="w-full h-full object-contain relative z-10"
           />
         </div>
         <div>
@@ -42,7 +44,7 @@ const Sidebar = () => {
 
       {/* Foto del equipo en la parte baja del sidebar */}
       <div className="mx-4 mb-3 rounded-2xl overflow-hidden relative h-28 group">
-        <img src="/foto-equipo.jpg" alt="Equipo Legionarios" className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110" />
+        <img src="/femenino.jpeg" alt="Equipo Femenino" className="w-full h-full object-cover object-top opacity-80 transition-transform duration-700 group-hover:scale-110" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy-900/90 via-navy-900/30 to-transparent" />
         <p className="absolute bottom-2 left-3 text-[9px] font-black text-white uppercase tracking-widest">
           Temporada 2025
@@ -50,10 +52,17 @@ const Sidebar = () => {
       </div>
 
       {/* Configuración */}
-      <div className="p-4">
-        <div className="bg-navy-900/50 rounded-2xl p-3 border border-white/5">
-          <NavItem to="/settings" icon={<GearSix size={24} />} label="Configuración" color={color} />
+      <div className="p-4 space-y-2">
+        <div className="bg-navy-900/50 rounded-2xl p-2 border border-white/5">
+          <NavItem to="/settings" icon={<GearSix size={20} />} label="Configuración" color={color} />
         </div>
+        <button 
+          onClick={signOut}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300 text-red-400 hover:bg-red-500/10 font-medium text-sm"
+        >
+          <SignOut size={20} className="shrink-0" />
+          <span>Cerrar Sesión</span>
+        </button>
       </div>
     </aside>
   );

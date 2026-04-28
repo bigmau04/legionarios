@@ -63,14 +63,15 @@ const Login = () => {
       >
         {/* Logo + nombre */}
         <div className="flex flex-col items-center mb-10">
-          <motion.img
-            src="/logo.png"
-            alt="Legionarios RC"
+          <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1, type: 'spring', stiffness: 180 }}
-            className="w-28 h-28 object-contain drop-shadow-2xl mb-5"
-          />
+            className="w-28 h-28 bg-white rounded-full p-3 shadow-2xl flex items-center justify-center mb-5 relative"
+          >
+            <div className="absolute inset-0 bg-white/20 blur-xl rounded-full animate-pulse" />
+            <img src="/logo.png" alt="Legionarios RC" className="w-full h-full object-contain relative z-10" />
+          </motion.div>
           <h1 className="text-3xl font-black tracking-tight text-center">LEGIONARIOS <span className="text-gold-500">R.C.</span></h1>
           <p className="text-gray-500 text-sm mt-1 font-medium">Panel de Gestión del Club</p>
         </div>

@@ -25,7 +25,7 @@ const Dashboard = () => {
       {/* ── Hero Banner con foto de partido ── */}
       <div className="relative h-56 md:h-72 overflow-hidden">
         <img
-          src="/foto-mele.jpg"
+          src="/scrum.jpeg"
           alt="Legionarios RC en partido"
           className="w-full h-full object-cover object-center"
         />
@@ -36,7 +36,9 @@ const Dashboard = () => {
         {/* Contenido sobre el hero */}
         <div className="absolute inset-0 flex items-center px-8 md:px-12">
           <div className="flex items-center gap-5">
-            <img src="/logo.png" alt="Logo" className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-2xl" />
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full p-2 shadow-2xl flex items-center justify-center">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+            </div>
             <div>
               <p className="text-gold-500 text-[10px] font-black uppercase tracking-[4px] mb-1">Bienvenido</p>
               <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-none">
@@ -121,7 +123,7 @@ const Dashboard = () => {
             className="bento-card md:col-span-1 overflow-hidden !p-0">
             {/* Foto */}
             <div className="relative h-36 overflow-hidden group">
-              <img src="/foto-equipo.jpg" alt="Plantel Legionarios"
+              <img src="/masculino.jpeg" alt="Plantel Legionarios"
                 className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-t from-navy-800/90 to-transparent" />
               <p className="absolute bottom-3 left-4 text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
