@@ -124,7 +124,7 @@ const Dashboard = () => {
             {/* Foto */}
             <div className="relative h-36 overflow-hidden group">
               <img src="/masculino.jpeg" alt="Plantel Legionarios"
-                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
+                className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-t from-navy-800/90 to-transparent" />
               <p className="absolute bottom-3 left-4 text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
                 <Clock size={12} /> Estado del Plantel
