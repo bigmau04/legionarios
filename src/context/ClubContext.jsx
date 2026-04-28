@@ -21,6 +21,30 @@ const DEFAULT_CONFIG = {
   categories: ['M16', 'M18', 'Primera', 'Veteranos'],
 };
 
+const generateFixedTrainings = () => {
+  const fixed = [];
+  const start = new Date();
+  start.setDate(1); // Inicio de mes actual
+  for (let i = 0; i < 60; i++) { // Generar para los próximos 60 días
+    const d = new Date(start.getTime());
+    d.setDate(start.getDate() + i);
+    const day = d.getDay();
+    if (day === 1 || day === 3 || day === 5) { // 1=Lunes, 3=Miércoles, 5=Viernes
+      const dateStr = d.toISOString().split('T')[0];
+      fixed.push({
+        id: `fixed-${dateStr}`, // ID artificial para React
+        title: 'Entrenamiento Oficial',
+        type: 'Entreno',
+        date: dateStr,
+        time: '19:00',
+        location: 'Pista de Atletismo',
+        description: 'Entrenamiento fijo del club'
+      });
+    }
+  }
+  return fixed;
+};
+
 export const ClubProvider = ({ children }) => {
   const [loading,             setLoading]             = useState(true);
   const [players,             setPlayers]             = useState([]);
@@ -44,7 +68,16 @@ export const ClubProvider = ({ children }) => {
       ]);
       if (pd) setPlayers(pd.map(mapPlayer));
       if (py) setPayments(py.map(mapPayment));
-      if (ev) setEvents(ev.map(mapEvent));
+      if (ev) {
+        const dbEvents = ev.map(mapEvent);
+        const fixedEvents = generateFixedTrainings();
+        const finalEvents = [...dbEvents];
+        // Solo agregar los fijos si no hay uno manual en esa fecha
+        fixedEvents.forEach(fe => {
+          if (!finalEvents.some(e => e.date === fe.date)) finalEvents.push(fe);
+        });
+        setEvents(finalEvents.sort((a, b) => a.date.localeCompare(b.date)));
+      }
       if (ar) setAttendanceRequests(ar.map(mapAttendance));
       if (cf) setConfig(mapConfig(cf));
       setLoading(false);
@@ -135,11 +168,14 @@ export const ClubProvider = ({ children }) => {
   };
 
   const requestAttendance = async ({ playerId, playerName, eventId, eventTitle, date, type = 'cancha', arrivalTime = null, hoursEarned = 0, evidenceUrl = null }) => {
-    // Evitar duplicados de cancha para el mismo evento
-    if (type === 'cancha' && attendanceRequests.some(r => r.playerId === playerId && r.eventId === eventId)) return false;
+    // Evitar duplicados de cancha para el mismo evento/fecha
+    if (type === 'cancha' && attendanceRequests.some(r => r.playerId === playerId && r.date === date)) return false;
     
+    // Si el ID es artificial ('fixed-...'), lo pasamos como null a la BD para evitar error de tipo BIGINT
+    const safeEventId = typeof eventId === 'string' && eventId.startsWith('fixed-') ? null : eventId;
+
     const { data, error } = await supabase.from('attendance_requests').insert({
-      player_id: playerId, player_name: playerName, event_id: eventId,
+      player_id: playerId, player_name: playerName, event_id: safeEventId,
       event_title: eventTitle, date, status: 'Pendiente',
       type, arrival_time: arrivalTime, hours_earned: hoursEarned, evidence_url: evidenceUrl
     }).select().single();
