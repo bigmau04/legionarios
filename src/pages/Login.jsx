@@ -1,23 +1,49 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { EnvelopeSimple, Lock, Eye, EyeSlash, Warning } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { EnvelopeSimple, Lock, Eye, EyeSlash, Warning, User, CheckCircle } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
+  
+  const [isLogin, setIsLogin] = useState(true);
+  
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  
   const [showPwd,  setShowPwd]  = useState(false);
   const [error,    setError]    = useState('');
+  const [success,  setSuccess]  = useState('');
   const [loading,  setLoading]  = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
-    const err = await signIn(email, password);
-    if (err) setError('Correo o contraseña incorrectos. Verifica tus credenciales.');
+
+    if (isLogin) {
+      const err = await signIn(email, password);
+      if (err) setError('Correo o contraseña incorrectos. Verifica tus credenciales.');
+    } else {
+      const err = await signUp(email, password, fullName);
+      if (err) {
+        setError(err.message === 'User already registered' ? 'El correo ya está registrado.' : 'Hubo un error al registrarse. La contraseña debe tener mínimo 6 caracteres.');
+      } else {
+        setSuccess('¡Registro exitoso! Iniciando sesión...');
+        setTimeout(() => signIn(email, password), 1500);
+      }
+    }
     setLoading(false);
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setError('');
+    setSuccess('');
+    setFullName('');
+    setPassword('');
   };
 
   return (
@@ -51,17 +77,63 @@ const Login = () => {
 
         {/* Card */}
         <div className="bento-card space-y-5">
-          <h2 className="text-xl font-bold">Iniciar Sesión</h2>
+          <div className="flex bg-navy-900/50 p-1 rounded-xl">
+            <button
+              onClick={() => !isLogin && toggleMode()}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${isLogin ? 'bg-gold-500 text-navy-900' : 'text-gray-400 hover:text-white'}`}
+            >
+              Entrar
+            </button>
+            <button
+              onClick={() => isLogin && toggleMode()}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${!isLogin ? 'bg-gold-500 text-navy-900' : 'text-gray-400 hover:text-white'}`}
+            >
+              Registrarse
+            </button>
+          </div>
 
-          {error && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-              <Warning size={20} className="text-red-400 shrink-0" />
-              <p className="text-red-400 text-sm">{error}</p>
-            </motion.div>
-          )}
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div key="error" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 overflow-hidden">
+                <Warning size={20} className="text-red-400 shrink-0" />
+                <p className="text-red-400 text-sm">{error}</p>
+              </motion.div>
+            )}
+            {success && (
+              <motion.div key="success" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-xl p-4 overflow-hidden">
+                <CheckCircle size={20} className="text-green-400 shrink-0" />
+                <p className="text-green-400 text-sm">{success}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Nombre (Solo Registro) */}
+            <AnimatePresence>
+              {!isLogin && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2 overflow-hidden"
+                >
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 pt-2 block">Nombre Completo</label>
+                  <div className="relative">
+                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="text" required={!isLogin}
+                      value={fullName} onChange={e => setFullName(e.target.value)}
+                      placeholder="Ej. Mateo Salazar"
+                      className="input-base pl-11"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Email */}
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Correo</label>
@@ -82,7 +154,7 @@ const Login = () => {
               <div className="relative">
                 <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
-                  type={showPwd ? 'text' : 'password'} required autoComplete="current-password"
+                  type={showPwd ? 'text' : 'password'} required autoComplete={isLogin ? "current-password" : "new-password"}
                   value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="input-base pl-11 pr-11"
@@ -102,15 +174,17 @@ const Login = () => {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-navy-900/30 border-t-navy-900 rounded-full animate-spin" />
-                  Verificando...
+                  {isLogin ? 'Verificando...' : 'Registrando...'}
                 </span>
-              ) : 'Entrar'}
+              ) : (isLogin ? 'Entrar' : 'Crear cuenta')}
             </motion.button>
           </form>
 
-          <p className="text-center text-[11px] text-gray-600">
-            ¿Olvidaste tu contraseña? Contacta al administrador del club.
-          </p>
+          {isLogin && (
+            <p className="text-center text-[11px] text-gray-600">
+              ¿Olvidaste tu contraseña? Contacta al administrador del club.
+            </p>
+          )}
         </div>
       </motion.div>
     </div>

@@ -39,6 +39,15 @@ export const AuthProvider = ({ children }) => {
     return error;
   };
 
+  const signUp = async (email, password, fullName) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName, role: 'player' } }
+    });
+    return error;
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -49,7 +58,7 @@ export const AuthProvider = ({ children }) => {
   const isPlayer = profile?.role === 'player';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, isPlayer, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, isPlayer, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
