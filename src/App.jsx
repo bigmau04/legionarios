@@ -8,12 +8,22 @@ import AddPlayer  from './pages/AddPlayer';
 import Attendance from './pages/Attendance';
 import Events     from './pages/Events';
 import Settings   from './pages/Settings';
+import Login      from './pages/Login';
+import PlayerPortal from './pages/PlayerPortal';
 import Sidebar    from './components/Sidebar';
 import BottomNav  from './components/BottomNav';
 import { useClub } from './context/ClubContext';
+import { useAuth } from './context/AuthContext';
 
 function AppInner() {
-  const { loading } = useClub();
+  const { loading: clubLoading } = useClub();
+  const { user, isPlayer, loading: authLoading } = useAuth();
+
+  const loading = clubLoading || authLoading;
+
+  if (!loading && !user) return <Login />;
+
+  if (!loading && isPlayer) return <PlayerPortal />;
 
   return (
     <>
