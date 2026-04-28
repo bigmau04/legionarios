@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
       .select('*, players(*)')
       .eq('id', userId)
       .single();
-    setProfile(data);
+    setProfile(data ?? {});
   };
 
   useEffect(() => {
@@ -55,10 +55,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin  = profile?.role === 'admin';
-  const isPlayer = profile?.role === 'player';
+  const isPlayer = profile?.role === 'player' || (profile != null && !isAdmin);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, isPlayer, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{
+      user, profile, loading, isAdmin, isPlayer,
+      signIn, signUp, signOut,
+    }}>
       {children}
     </AuthContext.Provider>
   );
