@@ -6,16 +6,16 @@ import { useAuth } from './AuthContext';
 const ClubContext = createContext();
 
 // ── Mappers: snake_case DB → camelCase JS ──
-const mapPlayer     = p => p ? ({ id: p.id, name: p.name, category: p.category, status: p.status, phone: p.phone, monthlyFee: p.monthly_fee, lastPayment: p.last_payment }) : null;
-const mapPayment    = p => p ? ({ id: p.id, playerId: p.player_id, name: p.name, amount: p.amount, date: p.date, method: p.method, status: p.status }) : null;
-const mapEvent      = e => e ? ({ id: e.id, title: e.title, type: e.type, date: e.date, time: e.time, location: e.location, description: e.description }) : null;
-const mapAttendance = a => a ? ({ 
-  id: a.id, playerId: a.player_id, playerName: a.player_name, eventId: a.event_id, 
+const mapPlayer = p => p ? ({ id: p.id, name: p.name, category: p.category, status: p.status, phone: p.phone, monthlyFee: p.monthly_fee, lastPayment: p.last_payment }) : null;
+const mapPayment = p => p ? ({ id: p.id, playerId: p.player_id, name: p.name, amount: p.amount, date: p.date, method: p.method, status: p.status }) : null;
+const mapEvent = e => e ? ({ id: e.id, title: e.title, type: e.type, date: e.date, time: e.time, location: e.location, description: e.description }) : null;
+const mapAttendance = a => a ? ({
+  id: a.id, playerId: a.player_id, playerName: a.player_name, eventId: a.event_id,
   eventTitle: a.event_title, date: a.date, status: a.status,
   arrivalTime: a.arrival_time, hoursEarned: a.hours_earned,
   evidenceUrl: a.evidence_url, type: a.type
 }) : null;
-const mapConfig     = c => c ? ({ clubName: c.club_name, tagline: c.tagline, primaryColor: c.primary_color, defaultFees: c.default_fees, categories: c.categories }) : null;
+const mapConfig = c => c ? ({ clubName: c.club_name, tagline: c.tagline, primaryColor: c.primary_color, defaultFees: c.default_fees, categories: c.categories }) : null;
 
 const DEFAULT_CONFIG = {
   clubName: 'Legionarios', tagline: 'Rugby Club', primaryColor: '#FDC010',
@@ -51,12 +51,12 @@ const generateFixedTrainings = () => {
 
 export const ClubProvider = ({ children }) => {
   const { user } = useAuth();
-  const [loading,             setLoading]             = useState(true);
-  const [players,             setPlayers]             = useState([]);
-  const [payments,            setPayments]            = useState([]);
-  const [events,              setEvents]              = useState([]);
-  const [attendanceRequests,  setAttendanceRequests]  = useState([]);
-  const [config,              setConfig]              = useState(DEFAULT_CONFIG);
+  const [loading, setLoading] = useState(true);
+  const [players, setPlayers] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [attendanceRequests, setAttendanceRequests] = useState([]);
+  const [config, setConfig] = useState(DEFAULT_CONFIG);
 
   // ── Carga inicial desde Supabase ──
   useEffect(() => {
@@ -84,7 +84,7 @@ export const ClubProvider = ({ children }) => {
         ]);
         if (pd) setPlayers(pd.map(mapPlayer));
         if (py) setPayments(py.map(mapPayment));
-        
+
         const dbEvents = ev ? ev.map(mapEvent) : [];
         const fixedEvents = generateFixedTrainings();
         const finalEvents = [...dbEvents];
@@ -93,7 +93,7 @@ export const ClubProvider = ({ children }) => {
           if (!finalEvents.some(e => e.date === fe.date)) finalEvents.push(fe);
         });
         setEvents(finalEvents.sort((a, b) => a.date.localeCompare(b.date)));
-        
+
         if (ar) setAttendanceRequests(ar.map(mapAttendance));
         if (cf) setConfig(mapConfig(cf));
       } catch (error) {
@@ -190,7 +190,7 @@ export const ClubProvider = ({ children }) => {
   const requestAttendance = async ({ playerId, playerName, eventId, eventTitle, date, type = 'cancha', arrivalTime = null, hoursEarned = 0, evidenceUrl = null }) => {
     // Evitar duplicados de cancha para el mismo evento/fecha
     if (type === 'cancha' && attendanceRequests.some(r => r.playerId === playerId && r.date === date)) return false;
-    
+
     // Si el ID es artificial ('fixed-...'), lo pasamos como null a la BD para evitar error de tipo BIGINT
     const safeEventId = typeof eventId === 'string' && eventId.startsWith('fixed-') ? null : eventId;
 
@@ -205,9 +205,9 @@ export const ClubProvider = ({ children }) => {
 
   // ── Finanzas ──
   const getFinancialSummary = () => {
-    const collected     = payments.reduce((acc, p) => acc + p.amount, 0);
+    const collected = payments.reduce((acc, p) => acc + p.amount, 0);
     const pendingPlayers = players.filter(p => p.status === 'Pendiente Pago');
-    const pendingAmount  = pendingPlayers.reduce((acc, p) => acc + (p.monthlyFee || 0), 0);
+    const pendingAmount = pendingPlayers.reduce((acc, p) => acc + (p.monthlyFee || 0), 0);
     return { total: collected, pending: pendingPlayers.length, pendingAmount };
   };
 
