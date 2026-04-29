@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
+
 
 const ClubContext = createContext();
 
@@ -48,6 +50,7 @@ const generateFixedTrainings = () => {
 };
 
 export const ClubProvider = ({ children }) => {
+  const { user } = useAuth();
   const [loading,             setLoading]             = useState(true);
   const [players,             setPlayers]             = useState([]);
   const [payments,            setPayments]            = useState([]);
@@ -57,35 +60,50 @@ export const ClubProvider = ({ children }) => {
 
   // ── Carga inicial desde Supabase ──
   useEffect(() => {
+    if (!user) {
+      setPlayers([]);
+      setPayments([]);
+      setEvents([]);
+      setAttendanceRequests([]);
+      setConfig(DEFAULT_CONFIG);
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
       setLoading(true);
-      const [
-        { data: pd }, { data: py }, { data: ev }, { data: ar }, { data: cf }
-      ] = await Promise.all([
-        supabase.from('players').select('*').order('id'),
-        supabase.from('payments').select('*').order('created_at', { ascending: false }),
-        supabase.from('events').select('*').order('date'),
-        supabase.from('attendance_requests').select('*').order('id'),
-        supabase.from('club_config').select('*').eq('id', 1).maybeSingle(),
-      ]);
-      if (pd) setPlayers(pd.map(mapPlayer));
-      if (py) setPayments(py.map(mapPayment));
-      
-      const dbEvents = ev ? ev.map(mapEvent) : [];
-      const fixedEvents = generateFixedTrainings();
-      const finalEvents = [...dbEvents];
-      // Solo agregar los fijos si no hay uno manual en esa fecha
-      fixedEvents.forEach(fe => {
-        if (!finalEvents.some(e => e.date === fe.date)) finalEvents.push(fe);
-      });
-      setEvents(finalEvents.sort((a, b) => a.date.localeCompare(b.date)));
-      
-      if (ar) setAttendanceRequests(ar.map(mapAttendance));
-      if (cf) setConfig(mapConfig(cf));
-      setLoading(false);
+      try {
+        const [
+          { data: pd }, { data: py }, { data: ev }, { data: ar }, { data: cf }
+        ] = await Promise.all([
+          supabase.from('players').select('*').order('id'),
+          supabase.from('payments').select('*').order('created_at', { ascending: false }),
+          supabase.from('events').select('*').order('date'),
+          supabase.from('attendance_requests').select('*').order('id'),
+          supabase.from('club_config').select('*').eq('id', 1).maybeSingle(),
+        ]);
+        if (pd) setPlayers(pd.map(mapPlayer));
+        if (py) setPayments(py.map(mapPayment));
+        
+        const dbEvents = ev ? ev.map(mapEvent) : [];
+        const fixedEvents = generateFixedTrainings();
+        const finalEvents = [...dbEvents];
+        // Solo agregar los fijos si no hay uno manual en esa fecha
+        fixedEvents.forEach(fe => {
+          if (!finalEvents.some(e => e.date === fe.date)) finalEvents.push(fe);
+        });
+        setEvents(finalEvents.sort((a, b) => a.date.localeCompare(b.date)));
+        
+        if (ar) setAttendanceRequests(ar.map(mapAttendance));
+        if (cf) setConfig(mapConfig(cf));
+      } catch (error) {
+        console.error('Error cargando datos del club:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
-  }, []);
+  }, [user]);
 
   // ── Configuración ──
   const updateConfig = async (patch) => {
